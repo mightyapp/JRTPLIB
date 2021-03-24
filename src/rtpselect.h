@@ -57,55 +57,55 @@
 namespace jrtplib
 {
 
-inline int RTPSelect(const SocketType *sockets, int8_t *readflags, size_t numsocks, RTPTime timeout)
-{
-	using namespace std;
-
-	vector<struct pollfd> fds(numsocks);
-
-	for (size_t i = 0 ; i < numsocks ; i++)
+	inline int RTPSelect(const SocketType *sockets, int8_t *readflags, size_t numsocks, RTPTime timeout)
 	{
-		fds[i].fd = sockets[i];
-		fds[i].events = POLLIN;
-		fds[i].revents = 0;
-		readflags[i] = 0;
-	}
+		using namespace std;
 
-	int timeoutmsec = -1;
-	if (timeout.GetDouble() >= 0)
-	{
-		double dtimeoutmsec = timeout.GetDouble()*1000.0;
-		if (dtimeoutmsec > (numeric_limits<int>::max)()) // parentheses to prevent windows 'max' macro expansion
-			dtimeoutmsec = (numeric_limits<int>::max)();
-		
-		timeoutmsec = (int)dtimeoutmsec;
-	}
+		vector<struct pollfd> fds(numsocks);
+
+		for (size_t i = 0; i < numsocks; i++)
+		{
+			fds[i].fd = sockets[i];
+			fds[i].events = POLLIN;
+			fds[i].revents = 0;
+			readflags[i] = 0;
+		}
+
+		int timeoutmsec = -1;
+		if (timeout.GetDouble() >= 0)
+		{
+			double dtimeoutmsec = timeout.GetDouble() * 1000.0;
+			if (dtimeoutmsec > (numeric_limits<int>::max)()) // parentheses to prevent windows 'max' macro expansion
+				dtimeoutmsec = (numeric_limits<int>::max)();
+
+			timeoutmsec = (int)dtimeoutmsec;
+		}
 
 #ifdef RTP_HAVE_WSAPOLL
-	int status = WSAPoll(&(fds[0]), (ULONG)numsocks, timeoutmsec);
-	if (status < 0)
-		return ERR_RTP_SELECT_ERRORINPOLL;
+		int status = WSAPoll(&(fds[0]), (ULONG)numsocks, timeoutmsec);
+		if (status < 0)
+			return ERR_RTP_SELECT_ERRORINPOLL;
 #else
-	int status = poll(&(fds[0]), numsocks, timeoutmsec);
-	if (status < 0)
-	{
-		// We're just going to ignore an EINTR
-		if (errno == EINTR)
-			return 0;
-		return ERR_RTP_SELECT_ERRORINPOLL;
-	}
+		int status = poll(&(fds[0]), numsocks, timeoutmsec);
+		if (status < 0)
+		{
+			// We're just going to ignore an EINTR
+			if (errno == EINTR)
+				return 0;
+			return ERR_RTP_SELECT_ERRORINPOLL;
+		}
 #endif // RTP_HAVE_WSAPOLL
 
-	if (status > 0)
-	{
-		for (size_t i = 0 ; i < numsocks ; i++)
+		if (status > 0)
 		{
-			if (fds[i].revents)
-				readflags[i] = 1;
+			for (size_t i = 0; i < numsocks; i++)
+			{
+				if (fds[i].revents)
+					readflags[i] = 1;
+			}
 		}
+		return status;
 	}
-	return status;
-}
 
 } // end namespace
 
@@ -121,7 +121,7 @@ inline int RTPSelect(const SocketType *sockets, int8_t *readflags, size_t numsoc
 namespace jrtplib
 {
 
-/** Wrapper function around 'select', 'poll' or 'WSAPoll', depending on the
+	/** Wrapper function around 'select', 'poll' or 'WSAPoll', depending on the
  *  availability on your platform.
  *
  *  Wrapper function around 'select', 'poll' or 'WSAPoll', depending on the
@@ -131,57 +131,58 @@ namespace jrtplib
  *  indefinitely if set to a negative value. The function returns the number
  *  of sockets that have data incoming.
  */
-inline int RTPSelect(const SocketType *sockets, int8_t *readflags, size_t numsocks, RTPTime timeout)
-{
-	struct timeval tv;
-	struct timeval *pTv = 0;
-
-	if (timeout.GetDouble() >= 0)
+	inline int RTPSelect(const SocketType *sockets, int8_t *readflags, size_t numsocks, RTPTime timeout)
 	{
-		tv.tv_sec = (long)timeout.GetSeconds();
-		tv.tv_usec = timeout.GetMicroSeconds();
-		pTv = &tv;
-	}
+		struct timeval tv;
+		struct timeval *pTv = 0;
 
-	fd_set fdset;
-	FD_ZERO(&fdset);
-	for (size_t i = 0 ; i < numsocks ; i++)
-	{
+		if (timeout.GetDouble() >= 0)
+		{
+			tv.tv_sec = (long)timeout.GetSeconds();
+			tv.tv_usec = timeout.GetMicroSeconds();
+			pTv = &tv;
+		}
+
+		fd_set fdset;
+		FD_ZERO(&fdset);
+		for (size_t i = 0; i < numsocks; i++)
+		{
 #ifndef RTP_SOCKETTYPE_WINSOCK
-		const int setsize = FD_SETSIZE;
-		// On windows it seems that comparing the socket value to FD_SETSIZE does
-		// not make sense
-		if (sockets[i] >= setsize)
-			return ERR_RTP_SELECT_SOCKETDESCRIPTORTOOLARGE;
+			const int setsize = FD_SETSIZE;
+			// On windows it seems that comparing the socket value to FD_SETSIZE does
+			// not make sense
+			if (sockets[i] >= setsize)
+				return ERR_RTP_SELECT_SOCKETDESCRIPTORTOOLARGE;
 #endif // RTP_SOCKETTYPE_WINSOCK
-		FD_SET(sockets[i], &fdset);
-		readflags[i] = 0;
-	}
-
-	int status = select(FD_SETSIZE, &fdset, 0, 0, pTv);
+			FD_SET(sockets[i], &fdset);
+			readflags[i] = 0;
+		}
+		printf("pid: %d started select", getpid());
+		int status = select(FD_SETSIZE, &fdset, 0, 0, pTv);
+		printf("pid: %d finished select", getpid());
 #ifdef RTP_SOCKETTYPE_WINSOCK
-	if (status < 0)
-		return ERR_RTP_SELECT_ERRORINSELECT;
+		if (status < 0)
+			return ERR_RTP_SELECT_ERRORINSELECT;
 #else
-	if (status < 0)
-	{
-		// We're just going to ignore an EINTR
-		if (errno == EINTR)
-			return 0;
-		return ERR_RTP_SELECT_ERRORINSELECT;
-	}
+		if (status < 0)
+		{
+			// We're just going to ignore an EINTR
+			if (errno == EINTR)
+				return 0;
+			return ERR_RTP_SELECT_ERRORINSELECT;
+		}
 #endif // RTP_HAVE_WSAPOLL
 
-	if (status > 0) // some descriptors were set, check them
-	{
-		for (size_t i = 0 ; i < numsocks ; i++)
+		if (status > 0) // some descriptors were set, check them
 		{
-			if (FD_ISSET(sockets[i], &fdset))
-				readflags[i] = 1;
+			for (size_t i = 0; i < numsocks; i++)
+			{
+				if (FD_ISSET(sockets[i], &fdset))
+					readflags[i] = 1;
+			}
 		}
+		return status;
 	}
-	return status;
-}
 
 } // end namespace
 
