@@ -1514,6 +1514,7 @@ namespace jrtplib
 				int8_t isset = 0;
 				printf("%d calling select", getpid());
 				int status = RTPSelect(&sock, &isset, 1, RTPTime(0));
+				printf("%d finished select status %d, isset %d\n", getpid(), status, isset);
 				if (status < 0)
 					return status;
 

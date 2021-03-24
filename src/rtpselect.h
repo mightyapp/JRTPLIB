@@ -101,12 +101,14 @@ namespace jrtplib
 
 		if (status > 0)
 		{
+			printf("%d status greater than 0 %d\n", getpid(), numsocks);
 			for (size_t i = 0; i < numsocks; i++)
 			{
 				if (fds[i].revents)
 					readflags[i] = 1;
 			}
 		}
+		printf("%d Returning from select\n", getpid());
 		return status;
 	}
 
