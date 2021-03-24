@@ -1500,7 +1500,7 @@ namespace jrtplib
 		{
 			len = 0;
 			RTPIOCTL(sock, FIONREAD, &len);
-			printf("Len %d\n", len);
+			printf("Len %lu\n", len);
 			if (len <= 0) // make sure a packet of length zero is not queued
 			{
 				// An alternative workaround would be to just use non-blocking sockets.
