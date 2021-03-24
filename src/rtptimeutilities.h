@@ -46,6 +46,7 @@
 #include <errno.h>
 #endif // RTP_HAVE_QUERYPERFORMANCECOUNTER
 #include <unistd.h>
+#include <stdio.h>
 #define RTP_NTPTIMEOFFSET 2208988800UL
 
 #ifdef RTP_HAVE_VSUINT64SUFFIX
