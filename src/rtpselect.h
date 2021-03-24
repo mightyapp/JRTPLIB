@@ -101,7 +101,7 @@ namespace jrtplib
 
 		if (status > 0)
 		{
-			printf("%d status greater than 0 %d\n", getpid(), numsocks);
+			printf("%d status greater than 0 %lu\n", getpid(), numsocks);
 			for (size_t i = 0; i < numsocks; i++)
 			{
 				if (fds[i].revents)
