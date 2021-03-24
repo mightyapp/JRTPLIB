@@ -820,11 +820,13 @@ namespace jrtplib
 			return ERR_RTP_UDPV4TRANS_NOTCREATED;
 		}
 		status = PollSocket(true); // poll RTP socket
-		if (rtpsock != rtcpsock)   // no need to poll twice when multiplexing
+		printf("%d left poll socket", getpid());
+		if (rtpsock != rtcpsock) // no need to poll twice when multiplexing
 		{
 			if (status >= 0)
 				status = PollSocket(false); // poll RTCP socket
 		}
+		printf("%d about to unlock", getpid());
 		MAINMUTEX_UNLOCK
 		return status;
 	}
@@ -1499,8 +1501,9 @@ namespace jrtplib
 		do
 		{
 			len = 0;
+			printf("%d Before RTPIOCTL %lu\n", getpid(), len);
 			RTPIOCTL(sock, FIONREAD, &len);
-			printf("Len %lu\n", len);
+			printf("%d Len %lu\n", getpid(), len);
 			if (len <= 0) // make sure a packet of length zero is not queued
 			{
 				// An alternative workaround would be to just use non-blocking sockets.
@@ -1509,6 +1512,7 @@ namespace jrtplib
 				// an extra select call in case ioctl says the length is zero.
 
 				int8_t isset = 0;
+				printf("%d calling select", getpid());
 				int status = RTPSelect(&sock, &isset, 1, RTPTime(0));
 				if (status < 0)
 					return status;
@@ -1527,7 +1531,7 @@ namespace jrtplib
 				fromlen = sizeof(struct sockaddr_in);
 				printf("Receiving on %d \n", getpid());
 				recvlen = recvfrom(sock, packetbuffer, RTPUDPV4TRANS_MAXPACKSIZE, 0, (struct sockaddr *)&srcaddr, &fromlen);
-				printf("Received from socket %d datasize: %d\n", sock, recvlen);
+				printf("%d Received from socket %d datasize: %d\n", getpid(), sock, recvlen);
 				if (recvlen > 0)
 				{
 					bool acceptdata;
