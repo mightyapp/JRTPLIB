@@ -43,6 +43,7 @@
 #include "rtperrors.h"
 #include "rtptimeutilities.h"
 #include "rtpsocketutil.h"
+#include <unistd.h>
 
 #if defined(RTP_HAVE_WSAPOLL) || defined(RTP_HAVE_POLL)
 
