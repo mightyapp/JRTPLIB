@@ -1500,7 +1500,7 @@ namespace jrtplib
 		{
 			len = 0;
 			RTPIOCTL(sock, FIONREAD, &len);
-
+			printf("Len %d\n", len);
 			if (len <= 0) // make sure a packet of length zero is not queued
 			{
 				// An alternative workaround would be to just use non-blocking sockets.
@@ -1525,10 +1525,9 @@ namespace jrtplib
 			{
 				RTPTime curtime = RTPTime::CurrentTime();
 				fromlen = sizeof(struct sockaddr_in);
-				printf("Receiving from socket\n");
-				printf("Socket %d \n", getpid());
+				printf("Receiving on %d \n", getpid());
 				recvlen = recvfrom(sock, packetbuffer, RTPUDPV4TRANS_MAXPACKSIZE, 0, (struct sockaddr *)&srcaddr, &fromlen);
-				printf("Received from socket\n");
+				printf("Received from socket %d datasize: %d\n", sock, recvlen);
 				if (recvlen > 0)
 				{
 					bool acceptdata;
