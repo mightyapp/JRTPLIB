@@ -1528,7 +1528,9 @@ namespace jrtplib
 
 			if (dataavailable)
 			{
+				printf("%d Getting current time\n", getpid());
 				RTPTime curtime = RTPTime::CurrentTime();
+				printf("%d Got current time\n", getpid());
 				fromlen = sizeof(struct sockaddr_in);
 				printf("Receiving on %d \n", getpid());
 				recvlen = recvfrom(sock, packetbuffer, RTPUDPV4TRANS_MAXPACKSIZE, 0, (struct sockaddr *)&srcaddr, &fromlen);
