@@ -80,13 +80,15 @@ namespace jrtplib
 
 			timeoutmsec = (int)dtimeoutmsec;
 		}
-
+		printf("Select timeout %d\n", timeoutmsec);
 #ifdef RTP_HAVE_WSAPOLL
 		int status = WSAPoll(&(fds[0]), (ULONG)numsocks, timeoutmsec);
 		if (status < 0)
 			return ERR_RTP_SELECT_ERRORINPOLL;
 #else
+		printf("PID: %d Polling\n", getpid());
 		int status = poll(&(fds[0]), numsocks, timeoutmsec);
+		printf("PID: %d Finished polling %d\n", getpid(), status);
 		if (status < 0)
 		{
 			// We're just going to ignore an EINTR
