@@ -285,12 +285,9 @@ namespace jrtplib
 			// Get the corresponding times in system time and monotonic time
 			struct timespec tpSys, tpMono;
 
-			printf("%d GETTING TIME", getpid());
 			clock_gettime(CLOCK_REALTIME, &tpSys);
-			printf("%d GOT REAL TIME", getpid());
 			clock_gettime(CLOCK_MONOTONIC, &tpMono);
 
-			printf("%d GOT TIME", getpid());
 			double tSys = RTPTime_timespecToDouble(tpSys);
 			double tMono = RTPTime_timespecToDouble(tpMono);
 
