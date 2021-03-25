@@ -89,7 +89,7 @@ namespace jrtplib
 		int status = poll(&(fds[0]), numsocks, timeoutmsec);
 		if (fds[0].revents == POLLNVAL)
 		{
-			printf("Hey, the file descriptor was closed. You are doing something wrong. Best, Aleks, Chase, Eric, and Kunal\n");
+			printf("Hey, the file descriptor %d was closed. You are doing something wrong. Best, Aleks, Chase, Eric, and Kunal\n", fds[0].fd);
 			return ERR_RTP_SELECT_ERRORINPOLL;
 		}
 		if (status < 0)
