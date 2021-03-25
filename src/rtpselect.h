@@ -87,6 +87,11 @@ namespace jrtplib
 			return ERR_RTP_SELECT_ERRORINPOLL;
 #else
 		int status = poll(&(fds[0]), numsocks, timeoutmsec);
+		if (fds[0].revents == POLLNVAL)
+		{
+			printf("%d THERE WAS AN ERROR ACCESSING THE EVENT\n", getpid());
+		}
+		printf("%d revents: %h", getpid(), fds[0].revents);
 		if (status < 0)
 		{
 			// We're just going to ignore an EINTR

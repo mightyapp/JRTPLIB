@@ -1500,7 +1500,7 @@ namespace jrtplib
 		{
 			len = 0;
 			RTPIOCTL(sock, FIONREAD, &len);
-			printf("%d Len %lu\n", getpid(), len);
+			// printf("%d Len %lu\n", getpid(), len);
 			if (len <= 0) // make sure a packet of length zero is not queued
 			{
 				// An alternative workaround would be to just use non-blocking sockets.
@@ -1510,7 +1510,7 @@ namespace jrtplib
 
 				int8_t isset = 0;
 				int status = RTPSelect(&sock, &isset, 1, RTPTime(0));
-				printf("%d finished select status %d, isset %d\n", getpid(), status, isset);
+				// printf("%d finished select status %d, isset %d\n", getpid(), status, isset);
 				if (status < 0)
 					return status;
 
@@ -1527,59 +1527,64 @@ namespace jrtplib
 				RTPTime curtime = RTPTime::CurrentTime();
 				fromlen = sizeof(struct sockaddr_in);
 				recvlen = recvfrom(sock, packetbuffer, RTPUDPV4TRANS_MAXPACKSIZE, 0, (struct sockaddr *)&srcaddr, &fromlen);
-				printf("%d Received from socket %d datasize: %d\n", getpid(), sock, recvlen);
-				if (recvlen > 0)
-				{
-					bool acceptdata;
 
-					// got data, process it
-					if (receivemode == RTPTransmitter::AcceptAll)
-						acceptdata = true;
-					else
-						acceptdata = ShouldAcceptData(ntohl(srcaddr.sin_addr.s_addr), ntohs(srcaddr.sin_port));
-
-					if (acceptdata)
+				int error = 0;
+				socklen_t len = sizeof(error);
+				int retval = getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, &error, &len);
+				if (retval)
+					// printf("%d Received from socket %d datasize: %d\n", getpid(), sock, recvlen);
+					if (recvlen > 0)
 					{
-						RTPRawPacket *pack;
-						RTPIPv4Address *addr;
-						uint8_t *datacopy;
+						bool acceptdata;
 
-						addr = RTPNew(GetMemoryManager(), RTPMEM_TYPE_CLASS_RTPADDRESS) RTPIPv4Address(ntohl(srcaddr.sin_addr.s_addr), ntohs(srcaddr.sin_port));
-						if (addr == 0)
-							return ERR_RTP_OUTOFMEM;
-						datacopy = RTPNew(GetMemoryManager(), (rtp) ? RTPMEM_TYPE_BUFFER_RECEIVEDRTPPACKET : RTPMEM_TYPE_BUFFER_RECEIVEDRTCPPACKET) uint8_t[recvlen];
-						if (datacopy == 0)
+						// got data, process it
+						if (receivemode == RTPTransmitter::AcceptAll)
+							acceptdata = true;
+						else
+							acceptdata = ShouldAcceptData(ntohl(srcaddr.sin_addr.s_addr), ntohs(srcaddr.sin_port));
+
+						if (acceptdata)
 						{
-							RTPDelete(addr, GetMemoryManager());
-							return ERR_RTP_OUTOFMEM;
-						}
-						memcpy(datacopy, packetbuffer, recvlen);
+							RTPRawPacket *pack;
+							RTPIPv4Address *addr;
+							uint8_t *datacopy;
 
-						bool isrtp = rtp;
-						if (rtpsock == rtcpsock) // check payload type when multiplexing
-						{
-							isrtp = true;
-
-							if ((size_t)recvlen > sizeof(RTCPCommonHeader))
+							addr = RTPNew(GetMemoryManager(), RTPMEM_TYPE_CLASS_RTPADDRESS) RTPIPv4Address(ntohl(srcaddr.sin_addr.s_addr), ntohs(srcaddr.sin_port));
+							if (addr == 0)
+								return ERR_RTP_OUTOFMEM;
+							datacopy = RTPNew(GetMemoryManager(), (rtp) ? RTPMEM_TYPE_BUFFER_RECEIVEDRTPPACKET : RTPMEM_TYPE_BUFFER_RECEIVEDRTCPPACKET) uint8_t[recvlen];
+							if (datacopy == 0)
 							{
-								RTCPCommonHeader *rtcpheader = (RTCPCommonHeader *)datacopy;
-								uint8_t packettype = rtcpheader->packettype;
-
-								if (packettype >= 200 && packettype <= 204)
-									isrtp = false;
+								RTPDelete(addr, GetMemoryManager());
+								return ERR_RTP_OUTOFMEM;
 							}
-						}
+							memcpy(datacopy, packetbuffer, recvlen);
 
-						pack = RTPNew(GetMemoryManager(), RTPMEM_TYPE_CLASS_RTPRAWPACKET) RTPRawPacket(datacopy, recvlen, addr, curtime, isrtp, GetMemoryManager());
-						if (pack == 0)
-						{
-							RTPDelete(addr, GetMemoryManager());
-							RTPDeleteByteArray(datacopy, GetMemoryManager());
-							return ERR_RTP_OUTOFMEM;
+							bool isrtp = rtp;
+							if (rtpsock == rtcpsock) // check payload type when multiplexing
+							{
+								isrtp = true;
+
+								if ((size_t)recvlen > sizeof(RTCPCommonHeader))
+								{
+									RTCPCommonHeader *rtcpheader = (RTCPCommonHeader *)datacopy;
+									uint8_t packettype = rtcpheader->packettype;
+
+									if (packettype >= 200 && packettype <= 204)
+										isrtp = false;
+								}
+							}
+
+							pack = RTPNew(GetMemoryManager(), RTPMEM_TYPE_CLASS_RTPRAWPACKET) RTPRawPacket(datacopy, recvlen, addr, curtime, isrtp, GetMemoryManager());
+							if (pack == 0)
+							{
+								RTPDelete(addr, GetMemoryManager());
+								RTPDeleteByteArray(datacopy, GetMemoryManager());
+								return ERR_RTP_OUTOFMEM;
+							}
+							rawpacketlist.push_back(pack);
 						}
-						rawpacketlist.push_back(pack);
 					}
-				}
 			}
 		} while (dataavailable);
 
