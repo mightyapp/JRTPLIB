@@ -1528,63 +1528,63 @@ namespace jrtplib
 				fromlen = sizeof(struct sockaddr_in);
 				recvlen = recvfrom(sock, packetbuffer, RTPUDPV4TRANS_MAXPACKSIZE, 0, (struct sockaddr *)&srcaddr, &fromlen);
 
-				int error = 0;
-				socklen_t len = sizeof(error);
-				int retval = getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, &error, &len);
-				if (retval)
-					// printf("%d Received from socket %d datasize: %d\n", getpid(), sock, recvlen);
-					if (recvlen > 0)
+				// int error = 0;
+				// socklen_t len = sizeof(error);
+				// int retval = getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, &error, &len);
+				// if (retval)
+				// printf("%d Received from socket %d datasize: %d\n", getpid(), sock, recvlen);
+				if (recvlen > 0)
+				{
+					bool acceptdata;
+
+					// got data, process it
+					if (receivemode == RTPTransmitter::AcceptAll)
+						acceptdata = true;
+					else
+						acceptdata = ShouldAcceptData(ntohl(srcaddr.sin_addr.s_addr), ntohs(srcaddr.sin_port));
+
+					if (acceptdata)
 					{
-						bool acceptdata;
+						RTPRawPacket *pack;
+						RTPIPv4Address *addr;
+						uint8_t *datacopy;
 
-						// got data, process it
-						if (receivemode == RTPTransmitter::AcceptAll)
-							acceptdata = true;
-						else
-							acceptdata = ShouldAcceptData(ntohl(srcaddr.sin_addr.s_addr), ntohs(srcaddr.sin_port));
-
-						if (acceptdata)
+						addr = RTPNew(GetMemoryManager(), RTPMEM_TYPE_CLASS_RTPADDRESS) RTPIPv4Address(ntohl(srcaddr.sin_addr.s_addr), ntohs(srcaddr.sin_port));
+						if (addr == 0)
+							return ERR_RTP_OUTOFMEM;
+						datacopy = RTPNew(GetMemoryManager(), (rtp) ? RTPMEM_TYPE_BUFFER_RECEIVEDRTPPACKET : RTPMEM_TYPE_BUFFER_RECEIVEDRTCPPACKET) uint8_t[recvlen];
+						if (datacopy == 0)
 						{
-							RTPRawPacket *pack;
-							RTPIPv4Address *addr;
-							uint8_t *datacopy;
-
-							addr = RTPNew(GetMemoryManager(), RTPMEM_TYPE_CLASS_RTPADDRESS) RTPIPv4Address(ntohl(srcaddr.sin_addr.s_addr), ntohs(srcaddr.sin_port));
-							if (addr == 0)
-								return ERR_RTP_OUTOFMEM;
-							datacopy = RTPNew(GetMemoryManager(), (rtp) ? RTPMEM_TYPE_BUFFER_RECEIVEDRTPPACKET : RTPMEM_TYPE_BUFFER_RECEIVEDRTCPPACKET) uint8_t[recvlen];
-							if (datacopy == 0)
-							{
-								RTPDelete(addr, GetMemoryManager());
-								return ERR_RTP_OUTOFMEM;
-							}
-							memcpy(datacopy, packetbuffer, recvlen);
-
-							bool isrtp = rtp;
-							if (rtpsock == rtcpsock) // check payload type when multiplexing
-							{
-								isrtp = true;
-
-								if ((size_t)recvlen > sizeof(RTCPCommonHeader))
-								{
-									RTCPCommonHeader *rtcpheader = (RTCPCommonHeader *)datacopy;
-									uint8_t packettype = rtcpheader->packettype;
-
-									if (packettype >= 200 && packettype <= 204)
-										isrtp = false;
-								}
-							}
-
-							pack = RTPNew(GetMemoryManager(), RTPMEM_TYPE_CLASS_RTPRAWPACKET) RTPRawPacket(datacopy, recvlen, addr, curtime, isrtp, GetMemoryManager());
-							if (pack == 0)
-							{
-								RTPDelete(addr, GetMemoryManager());
-								RTPDeleteByteArray(datacopy, GetMemoryManager());
-								return ERR_RTP_OUTOFMEM;
-							}
-							rawpacketlist.push_back(pack);
+							RTPDelete(addr, GetMemoryManager());
+							return ERR_RTP_OUTOFMEM;
 						}
+						memcpy(datacopy, packetbuffer, recvlen);
+
+						bool isrtp = rtp;
+						if (rtpsock == rtcpsock) // check payload type when multiplexing
+						{
+							isrtp = true;
+
+							if ((size_t)recvlen > sizeof(RTCPCommonHeader))
+							{
+								RTCPCommonHeader *rtcpheader = (RTCPCommonHeader *)datacopy;
+								uint8_t packettype = rtcpheader->packettype;
+
+								if (packettype >= 200 && packettype <= 204)
+									isrtp = false;
+							}
+						}
+
+						pack = RTPNew(GetMemoryManager(), RTPMEM_TYPE_CLASS_RTPRAWPACKET) RTPRawPacket(datacopy, recvlen, addr, curtime, isrtp, GetMemoryManager());
+						if (pack == 0)
+						{
+							RTPDelete(addr, GetMemoryManager());
+							RTPDeleteByteArray(datacopy, GetMemoryManager());
+							return ERR_RTP_OUTOFMEM;
+						}
+						rawpacketlist.push_back(pack);
 					}
+				}
 			}
 		} while (dataavailable);
 
