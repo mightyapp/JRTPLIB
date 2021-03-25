@@ -91,7 +91,7 @@ namespace jrtplib
 		{
 			printf("%d THERE WAS AN ERROR ACCESSING THE EVENT\n", getpid());
 		}
-		printf("%d revents: %d", getpid(), fds[0].revents);
+		printf("%d revents: %d\n", getpid(), fds[0].revents);
 		if (status < 0)
 		{
 			// We're just going to ignore an EINTR
