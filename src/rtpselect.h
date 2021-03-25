@@ -89,9 +89,9 @@ namespace jrtplib
 		int status = poll(&(fds[0]), numsocks, timeoutmsec);
 		if (fds[0].revents == POLLNVAL)
 		{
-			printf("%d THERE WAS AN ERROR ACCESSING THE EVENT\n", getpid());
+			printf("Hey, the file descriptor was closed. You are doing something wrong. Sincereley, Aleks, Chase, Eric, and Kunal");
+			return ERR_RTP_SELECT_ERRORINPOLL;
 		}
-		printf("%d revents: %d, status: %d\n", getpid(), fds[0].revents, status);
 		if (status < 0)
 		{
 			// We're just going to ignore an EINTR
