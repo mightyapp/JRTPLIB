@@ -117,7 +117,7 @@ namespace jrtplib
 		stopmutex.Lock();
 		stopthread = stop;
 		stopmutex.Unlock();
-
+		exit(1);
 		rtpsession.OnPollThreadStart(stopthread);
 
 		while (!stopthread)
