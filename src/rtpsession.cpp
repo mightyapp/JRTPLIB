@@ -146,7 +146,6 @@ namespace jrtplib
 	{
 		int status;
 		printf("Running create session\n");
-		exit(1);
 		if (created)
 			return ERR_RTP_SESSION_ALREADYCREATED;
 
