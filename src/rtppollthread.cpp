@@ -46,128 +46,133 @@
 namespace jrtplib
 {
 
-RTPPollThread::RTPPollThread(RTPSession &session,RTCPScheduler &sched):rtpsession(session),rtcpsched(sched)
-{
-	stop = false;
-	transmitter = 0;
-	timeinit.Dummy();
-}
-
-RTPPollThread::~RTPPollThread()
-{
-	Stop();
-}
- 
-int RTPPollThread::Start(RTPTransmitter *trans)
-{
-	if (JThread::IsRunning())
-		return ERR_RTP_POLLTHREAD_ALREADYRUNNING;
-	
-	transmitter = trans;
-	if (!stopmutex.IsInitialized())
+	RTPPollThread::RTPPollThread(RTPSession &session, RTCPScheduler &sched) : rtpsession(session), rtcpsched(sched)
 	{
-		if (stopmutex.Init() < 0)
-			return ERR_RTP_POLLTHREAD_CANTINITMUTEX;
-	}
-	stop = false;
-	if (JThread::Start() < 0)
-		return ERR_RTP_POLLTHREAD_CANTSTARTTHREAD;
-	return 0;
-}
-
-void RTPPollThread::Stop()
-{	
-	if (!IsRunning())
-		return;
-	
-	stopmutex.Lock();
-	stop = true;
-	stopmutex.Unlock();
-	
-	if (transmitter)
-		transmitter->AbortWait();
-	
-	RTPTime thetime = RTPTime::CurrentTime();
-	bool done = false;
-
-	while (JThread::IsRunning() && !done)
-	{
-		// wait max 5 sec
-		RTPTime curtime = RTPTime::CurrentTime();
-		if ((curtime.GetDouble()-thetime.GetDouble()) > 5.0)
-			done = true;
-		RTPTime::Wait(RTPTime(0,10000));
+		stop = false;
+		transmitter = 0;
+		timeinit.Dummy();
 	}
 
-	if (JThread::IsRunning())
+	RTPPollThread::~RTPPollThread()
 	{
-		std::cerr << "RTPPollThread: Warning! Having to kill thread!" << std::endl;
-		JThread::Kill();
+		Stop();
 	}
-	stop = false;
-	transmitter = 0;
-}
 
-void *RTPPollThread::Thread()
-{
-	JThread::ThreadStarted();
-	
-	bool stopthread;
-
-	stopmutex.Lock();
-	stopthread = stop;
-	stopmutex.Unlock();
-
-	rtpsession.OnPollThreadStart(stopthread);
-
-	while (!stopthread)
+	int RTPPollThread::Start(RTPTransmitter *trans)
 	{
-		int status;
+		if (JThread::IsRunning())
+			return ERR_RTP_POLLTHREAD_ALREADYRUNNING;
 
-		rtpsession.schedmutex.Lock();
-		rtpsession.sourcesmutex.Lock();
-		
-		RTPTime rtcpdelay = rtcpsched.GetTransmissionDelay();
-		
-		rtpsession.sourcesmutex.Unlock();
-		rtpsession.schedmutex.Unlock();
-
-		if ((status = transmitter->WaitForIncomingData(rtcpdelay)) < 0)
+		transmitter = trans;
+		if (!stopmutex.IsInitialized())
 		{
-			stopthread = true;
-			rtpsession.OnPollThreadError(status);
+			if (stopmutex.Init() < 0)
+				return ERR_RTP_POLLTHREAD_CANTINITMUTEX;
 		}
-		else
+		stop = false;
+		if (JThread::Start() < 0)
+			return ERR_RTP_POLLTHREAD_CANTSTARTTHREAD;
+		return 0;
+	}
+
+	void RTPPollThread::Stop()
+	{
+		if (!IsRunning())
+			return;
+
+		stopmutex.Lock();
+		stop = true;
+		stopmutex.Unlock();
+
+		if (transmitter)
+			transmitter->AbortWait();
+
+		RTPTime thetime = RTPTime::CurrentTime();
+		bool done = false;
+
+		while (JThread::IsRunning() && !done)
 		{
-			if ((status = transmitter->Poll()) < 0)
+			// wait max 5 sec
+			RTPTime curtime = RTPTime::CurrentTime();
+			if ((curtime.GetDouble() - thetime.GetDouble()) > 5.0)
+				done = true;
+			RTPTime::Wait(RTPTime(0, 10000));
+		}
+
+		if (JThread::IsRunning())
+		{
+			std::cerr << "RTPPollThread: Warning! Having to kill thread!" << std::endl;
+			JThread::Kill();
+		}
+		stop = false;
+		transmitter = 0;
+	}
+
+	void *RTPPollThread::Thread()
+	{
+		JThread::ThreadStarted();
+
+		bool stopthread;
+
+		stopmutex.Lock();
+		stopthread = stop;
+		stopmutex.Unlock();
+
+		rtpsession.OnPollThreadStart(stopthread);
+
+		while (!stopthread)
+		{
+			int status;
+
+			rtpsession.schedmutex.Lock();
+			rtpsession.sourcesmutex.Lock();
+
+			RTPTime rtcpdelay = rtcpsched.GetTransmissionDelay();
+
+			printf("rtcpdelay %lu\n", rtcpdelay.GetMicroSeconds());
+
+			rtpsession.sourcesmutex.Unlock();
+			rtpsession.schedmutex.Unlock();
+
+			if ((status = transmitter->WaitForIncomingData(rtcpdelay)) < 0)
 			{
 				stopthread = true;
 				rtpsession.OnPollThreadError(status);
 			}
 			else
 			{
-				if ((status = rtpsession.ProcessPolledData()) < 0)
+				uint64_t microseconds_since_epoch = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+				printf("about to poll %lu\n", microseconds_since_epoch);
+				if ((status = transmitter->Poll()) < 0)
 				{
 					stopthread = true;
 					rtpsession.OnPollThreadError(status);
 				}
 				else
 				{
-					rtpsession.OnPollThreadStep();
-					stopmutex.Lock();
-					stopthread = stop;
-					stopmutex.Unlock();
+					if ((status = rtpsession.ProcessPolledData()) < 0)
+					{
+						stopthread = true;
+						rtpsession.OnPollThreadError(status);
+					}
+					else
+					{
+						uint64_t microseconds_since_epoch_two = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+						printf("on poll thread step %lu\n", microseconds_since_epoch_two);
+						rtpsession.OnPollThreadStep();
+						stopmutex.Lock();
+						stopthread = stop;
+						stopmutex.Unlock();
+					}
 				}
 			}
 		}
+
+		rtpsession.OnPollThreadStop();
+
+		return 0;
 	}
-
-	rtpsession.OnPollThreadStop();
-
-	return 0;
-}
 
 } // end namespace
 
 #endif // RTP_SUPPORT_THREAD
-
