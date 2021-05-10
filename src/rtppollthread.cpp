@@ -142,7 +142,7 @@ namespace jrtplib
 			else
 			{
 				uint64_t microseconds_since_epoch = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-				printf("about to poll %d\n", microseconds_since_epoch);
+				printf("about to poll %lu\n", microseconds_since_epoch);
 				if ((status = transmitter->Poll()) < 0)
 				{
 					stopthread = true;
