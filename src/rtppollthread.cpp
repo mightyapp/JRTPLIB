@@ -127,7 +127,7 @@ namespace jrtplib
 			rtpsession.schedmutex.Lock();
 			rtpsession.sourcesmutex.Lock();
 
-			RTPTime rtcpdelay = rtcpsched.GetTransmissionDelay();
+			RTPTime rtcpdelay = RTPTime(0, 1000); // rtcpsched.GetTransmissionDelay();
 
 			printf("rtcpdelay %d\n", rtcpdelay.GetMicroSeconds());
 
