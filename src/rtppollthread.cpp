@@ -134,7 +134,7 @@ namespace jrtplib
 			rtpsession.sourcesmutex.Unlock();
 			rtpsession.schedmutex.Unlock();
 
-			uint64_t start = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+			uint64_t start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 			if ((status = transmitter->WaitForIncomingData(rtcpdelay)) < 0)
 			{
 				stopthread = true;
@@ -142,7 +142,7 @@ namespace jrtplib
 			}
 			else
 			{
-				uint64_t microseconds_since_epoch = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+				uint64_t microseconds_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 				printf("about to poll %lu\n", microseconds_since_epoch - start);
 				if ((status = transmitter->Poll()) < 0)
 				{
@@ -158,7 +158,7 @@ namespace jrtplib
 					}
 					else
 					{
-						uint64_t microseconds_since_epoch_two = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+						uint64_t microseconds_since_epoch_two = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 						printf("on poll thread step %lu\n", microseconds_since_epoch_two - microseconds_since_epoch);
 						rtpsession.OnPollThreadStep();
 						stopmutex.Lock();
