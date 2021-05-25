@@ -452,7 +452,7 @@ namespace jrtplib
 					m_rtcpPort = m_rtpPort;
 			}
 			int tos = IPTOS_PREC_CRITIC_ECP;
-			setsockopt(rtpsock, IPPROTO_IP, IP_TOS, tos, sizeof(tos));
+			setsockopt(rtpsock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
 			// set socket buffer sizes
 
 			size = params->GetRTPReceiveBuffer();
