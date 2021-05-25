@@ -451,7 +451,7 @@ namespace jrtplib
 					m_rtcpPort = m_rtpPort;
 			}
 			int tos = IPTOS_CLASS_CS5;
-			setsockopt(rtpsocket, IPPROTO_IP, IP_TOS, tos, sizeof(tos));
+			setsockopt(rtpsock, IPPROTO_IP, IP_TOS, tos, sizeof(tos));
 			// set socket buffer sizes
 
 			size = params->GetRTPReceiveBuffer();
