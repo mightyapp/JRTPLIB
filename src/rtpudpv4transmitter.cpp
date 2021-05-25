@@ -451,7 +451,7 @@ namespace jrtplib
 				else
 					m_rtcpPort = m_rtpPort;
 			}
-			int tos = IPTOS_LOWDELAY;
+			int tos = IPTOS_DSCP_AF21;
 			setsockopt(rtpsock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
 			printf("HELLO DID THIS WORK IT SEEMS TO HVE WORKED\n");
 			// set socket buffer sizes
